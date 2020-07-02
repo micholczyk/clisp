@@ -7,7 +7,7 @@ enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
 
 typedef struct lval {
 	int type;
-	long num;
+	double num;
 	char* err;
 	char* sym;
 	int count;
@@ -15,7 +15,7 @@ typedef struct lval {
 } lval;
 
 /* parsing.c */
-lval* lval_num(long);
+lval* lval_num(double);
 lval* lval_err(char*);
 lval* lval_sym(char*);
 lval* lval_sexpr(void);
@@ -28,5 +28,8 @@ void lval_println(lval*);
 void lval_del(lval*);
 lval* lval_eval_sexpr(lval*);
 lval* lval_eval(lval*);
+lval* lval_pop(lval*, int);
+lval* lval_take(lval*, int);
+lval* builtin_op(lval*, char*);
 
 #endif // PARSING_H_

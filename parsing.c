@@ -1,5 +1,3 @@
-// TODO: Float numbers don't work correctly.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -33,7 +31,7 @@ void add_history(char* unused) {}
 #endif
 
 /* Construct a pointer to a new Number lval. */
-lval* lval_num(long x) {
+lval* lval_num(double x) {
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_NUM;
 	v->num = x;
@@ -69,7 +67,7 @@ lval* lval_sexpr(void) {
 
 lval* lval_read_num(mpc_ast_t* t) {
 	errno = 0;
-	long x = strtol(t->contents, NULL, 10);
+	double x = strtod(t->contents, NULL);
 	return errno != ERANGE ?
 		lval_num(x) : lval_err("invalid number");
 }
@@ -114,14 +112,18 @@ void lval_expr_print(lval* v, char open, char close) {
 
 void lval_print(lval* v) {
 	switch (v->type) {
-		case LVAL_NUM: printf("%li", v->num); break;
+		case LVAL_NUM: printf("%.2f", v->num); break;
 		case LVAL_ERR: printf("Error: %s", v->err); break;
 		case LVAL_SYM: printf("%s", v->sym); break;
 		case LVAL_SEXPR: lval_expr_print(v, '(', ')'); break;
 	}
 }
 
-void lval_println(lval* v) { lval_print(v); putchar('\n'); }
+void lval_println(lval* v)
+{
+	lval_print(v);
+	putchar('\n');
+}
 
 void lval_del(lval* v)
 {
@@ -175,6 +177,76 @@ lval* lval_eval_sexpr(lval* v)
 
 lval* lval_eval(lval* v)
 {
+	/* Evaluate Sexpressions */
+	if (v->type == LVAL_SEXPR) { return lval_eval_sexpr(v); }
+	/* All other lval types remain the same */
+	return v;
+}
+
+lval* lval_pop(lval* v, int i)
+{
+	/* Find the item at i */
+	lval* x = v->cell[i];
+
+	/* Shift memory after the i item */
+	memmove(&v->cell[i], &v->cell[i+1],
+			sizeof(lval*) * (v->count-i-1));
+
+	/* Decrease the count of items in the list */
+	v->count--;
+
+	/* Reallocate the memory used */
+	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
+	return x;
+}
+
+lval* lval_take(lval* v, int i)
+{
+	lval* x = lval_pop(v, i);
+	lval_del(v);
+	return x;
+}
+
+lval* builtin_op(lval* a, char* op)
+{
+	/* Ensure all arguments are numbers */
+	for (int i = 0; i < a->count; i++) {
+		if (a->cell[i]->type != LVAL_NUM) {
+			lval_del(a);
+			return lval_err("Cannot operate on non-number!");
+		}
+	}
+
+	/* Pop the first element */
+	lval* x = lval_pop(a, 0);
+
+	/* If no arguments and sub then perform unary negation */
+	if ((strcmp(op, "-") == 0) && a->count == 0) {
+		x->num = -x->num;
+	}
+
+	while (a->count > 0) {
+		/* Pop the next element */
+		lval* y = lval_pop(a, 0);
+
+		if (strcmp(op, "+") == 0) { x->num += y->num; }
+		if (strcmp(op, "-") == 0) { x->num -= y->num; }
+		if (strcmp(op, "*") == 0) { x->num *= y->num; }
+		if (strcmp(op, "/") == 0) {
+			if (y->num == 0) {
+				lval_del(x);
+				lval_del(y);
+				x = lval_err("Division by zero!");
+				break;
+			}
+			x->num /= y->num;
+		}
+
+		lval_del(y);
+	}
+
+	lval_del(a);
+	return x;
 }
 
 int main(int argc, char** argv)
@@ -199,7 +271,7 @@ int main(int argc, char** argv)
 			Number, Symbol, Sexpr, Expr, Clisp);
 
 	/* Print version and exit info. */
-	puts("Clisp Version Alpha 3.1");
+	puts("Clisp Version Alpha 4.0");
 	puts("Press Ctrl+c to exit\n");
 
 	while (1) {
@@ -210,7 +282,7 @@ int main(int argc, char** argv)
 		mpc_result_t r;
 
 		if (mpc_parse("<stdin>", input, Clisp, &r)) {
-			lval* x = lval_read(r.output);
+			lval* x = lval_eval(lval_read(r.output));
 			lval_println(x);
 			lval_del(x);
 			mpc_ast_delete(r.output);
