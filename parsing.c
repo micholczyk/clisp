@@ -31,7 +31,8 @@ void add_history(char* unused) {}
 #endif
 
 /* Construct a pointer to a new Number lval. */
-lval* lval_num(double x) {
+lval* lval_num(double x)
+{
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_NUM;
 	v->num = x;
@@ -39,7 +40,8 @@ lval* lval_num(double x) {
 }
 
 /* Construct a pointer to a new Error lval. */
-lval* lval_err(char* m) {
+lval* lval_err(char* m)
+{
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_ERR;
 	v->err = malloc(strlen(m) + 1);
@@ -48,7 +50,8 @@ lval* lval_err(char* m) {
 }
 
 /* Construct a pointer to a new Symbol lval. */
-lval* lval_sym(char* s) {
+lval* lval_sym(char* s)
+{
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_SYM;
 	v->sym = malloc(strlen(s) + 1);
@@ -57,7 +60,8 @@ lval* lval_sym(char* s) {
 }
 
 /* Construct a pointer to a new empty Sexpr lval. */
-lval* lval_sexpr(void) {
+lval* lval_sexpr(void)
+{
 	lval* v = malloc(sizeof(lval));
 	v->type = LVAL_SEXPR;
 	v->count = 0;
@@ -65,21 +69,24 @@ lval* lval_sexpr(void) {
 	return v;
 }
 
-lval* lval_read_num(mpc_ast_t* t) {
+lval* lval_read_num(mpc_ast_t* t)
+{
 	errno = 0;
 	double x = strtod(t->contents, NULL);
 	return errno != ERANGE ?
 		lval_num(x) : lval_err("invalid number");
 }
 
-lval* lval_add(lval* v, lval* x) {
+lval* lval_add(lval* v, lval* x)
+{
 	v->count++;
 	v->cell = realloc(v->cell, sizeof(lval*) * v->count);
 	v->cell[v->count-1] = x;
 	return v;
 }
 
-lval* lval_read(mpc_ast_t* t) {
+lval* lval_read(mpc_ast_t* t)
+{
 	if (strstr(t->tag, "number")) { return lval_read_num(t); }
 	if (strstr(t->tag, "symbol")) { return lval_sym(t->contents); }
 
@@ -99,7 +106,8 @@ lval* lval_read(mpc_ast_t* t) {
 	return x;
 }
 
-void lval_expr_print(lval* v, char open, char close) {
+void lval_expr_print(lval* v, char open, char close)
+{
 	putchar(open);
 	for (int i = 0; i < v->count; i++) {
 		lval_print(v->cell[i]);
@@ -110,7 +118,8 @@ void lval_expr_print(lval* v, char open, char close) {
 	putchar(close);
 }
 
-void lval_print(lval* v) {
+void lval_print(lval* v)
+{
 	switch (v->type) {
 		case LVAL_NUM: printf("%.2f", v->num); break;
 		case LVAL_ERR: printf("Error: %s", v->err); break;
