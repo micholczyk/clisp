@@ -1,3 +1,5 @@
+// TODO: LVAL_INT for Integers.
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,9 +10,7 @@
 
 #ifdef _WIN32
 static char buffer[2048];
-/*
- * Fake readline function.
- */
+/* Fake readline function. */
 char* readline(char* prompt)
 {
 	fputs(prompt, stdout);
@@ -38,6 +38,16 @@ lval* lval_num(double x)
 	v->num = x;
 	return v;
 }
+
+/* Construct a pointer to a new Interger lval. */
+lval* lval_int(long x)
+{
+	lval* v = malloc(sizeof(lval));
+	v->type = LVAL_INT;
+	v->num = x;
+	return v;
+}
+
 
 /* Construct a pointer to a new Error lval. */
 lval* lval_err(char* m)
@@ -76,6 +86,15 @@ lval* lval_read_num(mpc_ast_t* t)
 	return errno != ERANGE ?
 		lval_num(x) : lval_err("invalid number");
 }
+
+lval* lval_read_int(mpc_ast_t* t)
+{
+	errno = 0;
+	long x = strtol(t->contents, NULL, 10);
+	return errno != ERANGE ?
+		lval_num(x) : lval_err("invalid number");
+}
+
 
 lval* lval_add(lval* v, lval* x)
 {

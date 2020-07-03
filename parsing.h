@@ -3,7 +3,7 @@
 
 #include "mpc.h"
 
-enum { LVAL_NUM, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
+enum { LVAL_NUM, LVAL_INT, LVAL_ERR, LVAL_SYM, LVAL_SEXPR };
 
 typedef struct lval {
 	int type;
@@ -16,6 +16,7 @@ typedef struct lval {
 
 /* parsing.c */
 lval* lval_num(double);
+lval* lval_int(long);
 lval* lval_err(char*);
 lval* lval_sym(char*);
 lval* lval_sexpr(void);
